@@ -13,7 +13,7 @@ SRCS = main.c i2c/i2c.c htu21d/htu21d.c bmp280/bmp280.c
 OBJS = $(SRCS:%.c=$(OBJ_DIR)/%.o)
 
 # Output Executable
-TARGET = $(BIN_DIR)/htu21d_app
+TARGET = $(BIN_DIR)/rpi_sensors
 
 # Default rule: Compile everything
 all: directories $(TARGET)
