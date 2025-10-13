@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include "i2c.h"
 
 struct htu21d_measurement
 {
@@ -12,12 +13,12 @@ struct htu21d_measurement
 
 struct htu21d
 {
-    int i2c_fd;
+    struct I2cBus *i2c_bus;
 };
 
-struct htu21d *htu21d_init();
-struct htu21d_measurement read_temperature(struct htu21d *self);
-struct htu21d_measurement read_humidity(struct htu21d *self);
+struct htu21d *htu21d_init(struct I2cBus *i2c_bus);
+struct htu21d_measurement htu21d_read_temperature(struct htu21d *self);
+struct htu21d_measurement htu21d_read_humidity(struct htu21d *self);
 void htu21d_close(struct htu21d *self);
 
 #endif /* HTU21_D_H */

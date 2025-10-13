@@ -2,14 +2,14 @@
 CC = aarch64-linux-gnu-gcc
 
 # Compiler Flags
-CFLAGS = -Wall -Wextra -I. -Ihtu21d
+CFLAGS = -Wall -Wextra -I. -Ii2c -Ihtu21d -Ibmp280
 
 # Directories
 OBJ_DIR = build
 BIN_DIR = build/bin
 
 # Source Files
-SRCS = main.c htu21d/htu21d.c
+SRCS = main.c i2c/i2c.c htu21d/htu21d.c bmp280/bmp280.c
 OBJS = $(SRCS:%.c=$(OBJ_DIR)/%.o)
 
 # Output Executable
@@ -20,7 +20,7 @@ all: directories $(TARGET)
 
 # Ensure build/ and bin/ directories exist
 directories:
-	mkdir -p $(OBJ_DIR) $(BIN_DIR) $(OBJ_DIR)/htu21d
+	mkdir -p $(OBJ_DIR) $(BIN_DIR) $(OBJ_DIR)/i2c $(OBJ_DIR)/htu21d $(OBJ_DIR)/bmp280
 
 # Linking step
 $(TARGET): $(OBJS)

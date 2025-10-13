@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <linux/i2c-dev.h>
 #include <sys/ioctl.h>
+#include "i2c.h"
 
 #define HTU21D_I2C_ADDR 0x40
 #define TRIGGER_TEMP_HOLD 0xE3
@@ -16,18 +17,38 @@
 #define TEMEPARTURE_MEASUREMENT 0x00
 #define HUMIDITY_MEASUREMENT 0x02
 
-#define HTU21_I2C_DEV_PATH "/dev/i2c-1"
+struct htu21d *htu21d_init(struct I2cBus *i2c_bus)
+{
+    if (!i2c_bus)
+    {
+        return NULL;
+    }
 
-static struct htu21d_measurement get_measurement(struct htu21d *self)
+    struct htu21d *ret = (struct htu21d *)malloc(sizeof(struct htu21d));
+
+    if (!ret)
+    {
+        return NULL;
+    }
+
+    ret->i2c_bus = i2c_bus;
+
+    return ret;
+}
+
+static struct htu21d_measurement get_measurement(struct htu21d *self, uint8_t command)
 {
     struct htu21d_measurement res;
     uint8_t data[3];
 
-    if (read(self->i2c_fd, data, 3) != 3)
+    if (self == NULL || self->i2c_bus == NULL)
     {
-        perror("Failed to read measurement");
-        res.is_valid = false;
-        goto out;
+        goto err_out;
+    }
+
+    if (i2c_read_register(self->i2c_bus, HTU21D_I2C_ADDR, command, data, 3) < 0)
+    {
+        goto err_out;
     }
 
     uint8_t computed_crc = compute_crc8(data, 2);
@@ -35,8 +56,7 @@ static struct htu21d_measurement get_measurement(struct htu21d *self)
     if (computed_crc != data[2])
     {
         printf("Wrong CRC: computed:%d | received:%d", computed_crc, data[2]);
-        res.is_valid = false;
-        goto out;
+        goto err_out;
     }
 
     uint16_t raw = (data[0] << 8) | (data[1] & MEASUREMENT_MASK);
@@ -53,50 +73,24 @@ static struct htu21d_measurement get_measurement(struct htu21d *self)
         res.is_valid = true;
         res.value = -6.0 + (125.0 * raw) / 65536.0;
     }
+    return res;
 
-out:
+err_out:
+    res.is_valid = false;
     return res;
 }
 
-struct htu21d *htu21d_init()
+struct htu21d_measurement htu21d_read_temperature(struct htu21d *self)
 {
-    struct htu21d *dev = calloc(1, sizeof(struct htu21d));
-
-    if ((dev->i2c_fd = open(HTU21_I2C_DEV_PATH, O_RDWR)) < 0)
-    {
-        perror("Failed to open I2C device");
-        return NULL;
-    }
-    if (ioctl(dev->i2c_fd, I2C_SLAVE, HTU21D_I2C_ADDR) < 0)
-    {
-        perror("Failed to set I2C address");
-        return NULL;
-    }
-    return dev;
+    return get_measurement(self, TRIGGER_TEMP_HOLD);
 }
 
-struct htu21d_measurement read_temperature(struct htu21d *self)
+struct htu21d_measurement htu21d_read_humidity(struct htu21d *self)
 {
-    uint8_t command = TRIGGER_TEMP_HOLD;
-
-    write(self->i2c_fd, &command, 1);
-    usleep(50000); // Wait for measurement
-
-    return get_measurement(self);
-}
-
-struct htu21d_measurement read_humidity(struct htu21d *self)
-{
-    uint8_t command = TRIGGER_HUMID_HOLD;
-
-    write(self->i2c_fd, &command, 1);
-    usleep(50000); // Wait for measurement
-
-    return get_measurement(self);
+    return get_measurement(self, TRIGGER_HUMID_HOLD);
 }
 
 void htu21d_close(struct htu21d *self)
-
 {
-    close(self->i2c_fd);
+    free(self);
 }
