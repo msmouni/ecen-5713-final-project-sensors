@@ -28,8 +28,8 @@ int main()
 
     // HTU21D
     struct htu21d *htu21d_sens = htu21d_init(i2c_bus);
-    struct htu21d_measurement temperature = htu21d_read_temperature(htu21d_sens);
-    struct htu21d_measurement humidity = htu21d_read_humidity(htu21d_sens);
+    struct htu21d_measurement temperature = htu21d_read_temperature_no_hold(htu21d_sens);
+    struct htu21d_measurement humidity = htu21d_read_humidity_no_hold(htu21d_sens);
 
     if (temperature.is_valid && humidity.is_valid)
     {

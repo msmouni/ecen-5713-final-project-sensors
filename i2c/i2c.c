@@ -27,6 +27,48 @@ struct I2cBus *i2c_init(char *i2c_path)
     return ret;
 }
 
+// Generic I2C write (send raw bytes to device)
+int i2c_write(struct I2cBus *self, uint8_t device_addr, const uint8_t *data, size_t len)
+{
+    if (!self || !data || len == 0)
+        return -1;
+
+    if (ioctl(self->i2c_fd, I2C_SLAVE, device_addr) < 0)
+    {
+        perror("Failed to select I2C device");
+        return -1;
+    }
+
+    if (write(self->i2c_fd, data, len) != (ssize_t)len)
+    {
+        perror("Failed to write I2C data");
+        return -1;
+    }
+
+    return 0;
+}
+
+// Generic I2C read (read raw bytes from device)
+int i2c_read(struct I2cBus *self, uint8_t device_addr, uint8_t *buffer, size_t len)
+{
+    if (!self || !buffer || len == 0)
+        return -1;
+
+    if (ioctl(self->i2c_fd, I2C_SLAVE, device_addr) < 0)
+    {
+        perror("Failed to select I2C device");
+        return -1;
+    }
+
+    if (read(self->i2c_fd, buffer, len) != (ssize_t)len)
+    {
+        perror("Failed to read I2C data");
+        return -1;
+    }
+
+    return 0;
+}
+
 // Function to read a register from a given device
 int i2c_read_register(struct I2cBus *self, uint8_t device_addr, uint8_t reg, uint8_t *buffer, size_t len)
 {
