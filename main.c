@@ -16,6 +16,14 @@
 #define DB_FILE "/var/lib/rpi_sensors_data/data.db"
 #define DB_DATA_SIZE 100
 
+volatile sig_atomic_t keep_running = 1; // Flag for shutdown
+
+void handle_signal(int signal)
+{
+    printf("\nCaught signal %d. Shutting down...\n", signal);
+    keep_running = 0; // Change flag to exit the loop
+}
+
 /*
 Double Fork Steps
 
@@ -125,6 +133,10 @@ int main(int argc, char *argv[])
     if (daemon_mode)
         daemonize();
 
+    // Set up signal handlers for SIGINT and SIGTERM
+    signal(SIGINT, handle_signal);
+    signal(SIGTERM, handle_signal);
+
     struct I2cBus *i2c_bus = i2c_init(I2C_BUS);
 
     if (!i2c_bus)
@@ -144,7 +156,7 @@ int main(int argc, char *argv[])
     struct sensors_db *sens_db = sensors_db_init(DB_FILE, DB_DATA_SIZE);
 
     // Main measurement loop
-    while (1)
+    while (keep_running)
     {
         sensors_update(bmp280_sens, htu21d_sens, sens_db, &temperature, &humidity, &bmp280_temp, &bmp280_pressure, verbose);
 
