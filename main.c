@@ -117,12 +117,15 @@ void sensors_update(struct bmp280 *bmp280_sens,
 int main(int argc, char *argv[])
 {
     int daemon_mode = 0;
+    int verbose = 0;
 
     // Parse command line arguments
     for (int i = 1; i < argc; i++)
     {
         if (strcmp(argv[i], "-d") == 0)
             daemon_mode = 1;
+        else if (strcmp(argv[i], "-v") == 0)
+            verbose = 1;
         else
         {
             fprintf(stderr, "Usage: %s [-d] [-v]\n", argv[0]);
@@ -162,10 +165,16 @@ int main(int argc, char *argv[])
 
         sleep(5); // Wait 5 seconds between measurements
     }
+
+    // Cleanup before exiting
+    if (verbose)
+        printf("Cleaning up resources...\n");
     i2c_close(i2c_bus);
     bmp280_close(bmp280_sens);
     htu21d_close(htu21d_sens);
     sensors_db_close(sens_db);
 
+    if (verbose)
+        printf("Program terminated.\n");
     return 0;
 }
